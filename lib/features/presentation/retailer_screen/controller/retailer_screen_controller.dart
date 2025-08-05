@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/data/model/retail_model/retail_model.dart';
 import '../../../../core/constants/textfield_map.dart';
 import '../../../../shared/sqflite/sql_helper.dart';
+import '../../retailer_home_screen/controller/retail_controller.dart';
 
 class RetailerFormController {
   final formKey = GlobalKey<FormState>();
@@ -11,12 +13,14 @@ class RetailerFormController {
   final Map<String, TextEditingController> controllers = {
     for (var field in retailerFields) field['key']: TextEditingController()
   };
+  final isRetailerLoadingProvider = StateProvider<bool>((ref) => false);
 
   /// Save the form and insert retailer into database
-  Future<void> saveForm(BuildContext context) async {
+  Future<void> saveForm(BuildContext context, WidgetRef ref) async {
     try {
-      print("object");
       if (formKey.currentState!.validate()) {
+        ref.read(isRetailerLoadingProvider.notifier).state = true;
+
         final formData = {
           for (var field in retailerFields)
             field['key']: controllers[field['key']]!.text.trim()
@@ -36,22 +40,30 @@ class RetailerFormController {
           long: position.longitude,
         );
 
-        await saveRetailer(retailer);
 
-        // Success message
+        await saveRetailer(retailer);
+        ref.refresh(combinedRetailDataProvider);
+        if(context.mounted){
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Retailer saved successfully")),
+          const SnackBar(content: Text("Retailer saved successfully")),
         );
+        context.pop();
+      }
+
         formKey.currentState!.reset();
         controllers.forEach((key, controller) => controller.clear());
       }
     } catch (e) {
-      // Error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
-      );
+      if(context.mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString()}")),
+        );
+      }
+    } finally {
+      ref.read(isRetailerLoadingProvider.notifier).state = false;
     }
   }
+
 
   /// Get current location safely
   Future<Position> _getCurrentLocation() async {

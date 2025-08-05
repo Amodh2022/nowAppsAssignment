@@ -8,6 +8,5 @@ final List<Map<String, dynamic>> retailerFields = [
   {'key': 'gst', 'label': 'GST Number', 'type': 'text', 'required': false},
   {'key': 'pan', 'label': 'PAN Number', 'type': 'text', 'required': false},
   {'key': 'type', 'label': 'Retailer Type', 'type': 'text', 'required': false},
-  {'key': 'open_time', 'label': 'Open Time', 'type': 'time', 'required': false},
-  {'key': 'close_time', 'label': 'Close Time', 'type': 'time', 'required': false},
+
 ];

@@ -11,6 +11,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
   List<Products>? _cachedProducts;
   ProductRepositoryImpl(this.dio);
+
  @override
   Future<List<Products>> getProducts({int? page, required int? limit}) async {
     try {

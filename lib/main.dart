@@ -5,7 +5,6 @@ import 'package:myapp/shared/sqflite/sql_helper.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  await SqlHelper.initDb();
   runApp(ProviderScope(child: const MyApp()));
   
 }

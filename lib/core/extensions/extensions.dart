@@ -34,8 +34,50 @@ extension ProductsExtension on Products {
       'prod_sell': prodSell,
       'prod_free_item': prodFreeItem,
       'prod_rk_price': prodRkPrice,
-       'prod_image': jsonEncode(prodImage),  // prodImage should be serializable
+      'prod_image': jsonEncode(prodImage),
     'prod_tax': jsonEncode(prodTax),
     };
   }
+  static Products fromMap(Map<String, dynamic> map) {
+    return Products(
+      prodId: map['prod_id'],
+      prodCode: map['prod_code'],
+      barCode: map['bar_code'],
+      prodName: map['prod_name'],
+      uOM: map['uom'],
+      unitId: map['unit_id'],
+      prodCombo: map['prod_combo'],
+      isFocused: map['is_focused'],
+      groupIds: map['group_ids'],
+      categoryIds: map['category_ids'],
+      unitFromValue: map['unit_from_value'],
+      unitToValue: map['unit_to_value'],
+      uomAlternateName: map['uom_alternate_name'],
+      uomAlternateId: map['uom_alternate_id'],
+      altUomFromDecimal: map['alt_uom_from_decimal'],
+      altUomToDecimal: map['alt_uom_to_decimal'],
+      underWarranty: map['under_warranty'],
+      action: map['action'],
+      groupId: map['group_id'],
+      catId: map['cat_id'],
+      prodHsnId: map['prod_hsn_id'],
+      prodHsnCode: map['prod_hsn_code'],
+      prodShortName: map['prod_short_name'],
+      prodPrice: map['prod_price'],
+      prodMrp: map['prod_mrp'],
+      prodBuy: map['prod_buy'],
+      prodSell: map['prod_sell'],
+      prodFreeItem: map['prod_free_item'],
+      prodRkPrice: map['prod_rk_price'],
+      prodImage: map['prod_image'] != null
+          ? ProdImage.fromJson(jsonDecode(map['prod_image']))
+          : null,
+      prodTax: map['prod_tax'] != null
+          ? ProdTax.fromJson(jsonDecode(map['prod_tax']))
+          : null,
+    );
+  }
+
 }
+
+

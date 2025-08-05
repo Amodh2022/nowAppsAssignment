@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:myapp/core/extensions/extensions.dart';
 import 'package:myapp/data/model/product_model/product_model.dart';
 import 'package:sqflite/sqflite.dart';
@@ -16,9 +17,12 @@ class SqlHelper {
     final path = join(await getDatabasesPath(), 'retail_app.db');
 
     return await openDatabase(
+
       path,
       version: 1,
       onCreate: (db, version) async {
+
+
         await db.execute('''
          CREATE TABLE retailers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,14 +47,7 @@ class SqlHelper {
 
         ''');
 
-        await db.execute('''
-          CREATE TABLE products (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            description TEXT,
-            prodRkPrice REAL
-          )
-        ''');
+
 
         await db.execute('''
           CREATE TABLE checkins (
@@ -93,8 +90,12 @@ CREATE TABLE cart_products (
   quantity INTEGER,
   price REAL
 )''');
-await db.execute('''
-  CREATE TABLE IF NOT EXISTS products (
+
+        await db.execute('''CREATE TABLE IF NOT EXISTS current_checkin (
+  step INTEGER
+);''');
+        await db.execute('''
+  CREATE TABLE products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     prod_id TEXT,
     prod_code TEXT,
@@ -124,7 +125,9 @@ await db.execute('''
     prod_buy TEXT,
     prod_sell TEXT,
     prod_free_item TEXT,
-    prod_rk_price TEXT
+    prod_rk_price TEXT,
+    prod_image TEXT,
+    prod_tax TEXT
   )
 ''');
 
@@ -132,23 +135,33 @@ await db.execute('''
     );
   }
 
-  static Future<void> insertProducts(List<Products> products) async {
-    final db = await SqlHelper.database;
-    final batch = db.batch();
-    for (var product in products) {
-      batch.insert(
-        'products',
-        product.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+  static Future<bool> insertProducts(List<Products> products) async {
+    try {
+      final db = await SqlHelper.database;
+      for (var product in products) {
+        db.insert(
+          'products',
+          product.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+
+      debugPrint('✅ Products saved successfully: ${products.length}');
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Failed to save products: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
     }
-    await batch.commit(noResult: true);
   }
+
 
   static Future<List<Products>> getProducts() async {
     final db = await SqlHelper.database;
     final maps = await db.query('products');
-    return maps.map((e) => Products.fromJson(e)).toList();
+
+    return maps.map((e) => ProductsExtension.fromMap(e)).toList();
   }
 
   static Future<void> clearProducts() async {
@@ -170,13 +183,39 @@ await db.execute('''
     conflictAlgorithm: ConflictAlgorithm.replace,
   );
 }
- static Future<List<Map<String, dynamic>>> getCartProducts() async {
-    final db = await database;
-    return await db.query('cart_products');
+  static Future<List<Products>> getCartProducts() async {
+    final db = await SqlHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query('cart_products');
+
+    return List.generate(maps.length, (i) {
+      return Products(
+        prodId: maps[i]['product_id'].toString(),
+        prodName: maps[i]['prod_name'],
+        prodMrp: maps[i]['price'].toString(),
+
+      );
+    });
   }
+
 
   static Future<void> clearCart() async {
     final db = await database;
     await db.delete('cart_products');
   }
+
+  static Future<void> saveCheckInStep(int step) async {
+    final db = await database;
+    await db.delete('current_checkin');
+    await db.insert('current_checkin', {'step': step});
+  }
+
+  static Future<int?> getCheckInStep() async {
+    final db = await database;
+    final result = await db.query('current_checkin');
+    if (result.isNotEmpty) {
+      return result.first['step'] as int?;
+    }
+    return null;
+  }
 }
+

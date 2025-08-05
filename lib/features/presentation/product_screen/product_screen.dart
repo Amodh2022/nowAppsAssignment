@@ -4,83 +4,105 @@ import 'package:go_router/go_router.dart';
 import 'package:myapp/features/presentation/product_screen/provider/product_provider.dart';
 import 'package:myapp/features/presentation/product_screen/provider/cart_provider.dart';
 import 'package:myapp/routing/app_routes.dart';
+import 'package:myapp/shared/provider/checkin_provider.dart';
 
-class ProductScreen extends ConsumerWidget {
+class ProductScreen extends ConsumerStatefulWidget {
   const ProductScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final productList = ref.watch(paginatedProductProvider);
-    final notifier = ref.read(paginatedProductProvider.notifier);
+  ConsumerState<ProductScreen> createState() => _ProductScreenState();
+}
+
+class _ProductScreenState extends ConsumerState<ProductScreen> {
+  @override
+  void initState() {
+    super.initState();
+    ref.read(checkInStepProvider.notifier).updateStep(3);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final productList = ref.watch(localProductProvider);
     final cart = ref.watch(cartProvider);
+    final cartNotifier = ref.read(cartProvider.notifier);
+    print("productList$productList");
 
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Products'),
+        centerTitle: true,
         actions: [
-          IconButton(onPressed: (){
-         context.go(AppRoutes.checkoutScreen);
-          }, icon:  Icon(Icons.shopping_cart, size: 30),),
-         
-          const SizedBox(width: 10)
+          IconButton(
+            icon: const Icon(Icons.shopping_cart, size: 30),
+            onPressed: () => context.go(AppRoutes.checkoutScreen),
+          ),
+          const SizedBox(width: 10),
         ],
-        title: const Text('Products')),
+      ),
       body: productList.when(
-        data: (products) => NotificationListener<ScrollNotification>(
-          onNotification: (scroll) {
-            if (scroll.metrics.pixels == scroll.metrics.maxScrollExtent) {
-              notifier.fetchMoreProducts();
-            }
-            return false;
-          },
-          child: GridView.builder(
-            padding: const EdgeInsets.all(10),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error loading products: $e')),
+        data: (products) {
+          if (products.isEmpty) {
+            return const Center(child: Text('No products available'));
+          }
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: products.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisExtent: 260,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+              mainAxisExtent: 310,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
             ),
             itemBuilder: (context, index) {
               final product = products[index];
-              final quantity = cart[product.prodId ?? ""] ?? 0;
+              final quantity = cart[product.prodId ?? ""]?.$2 ?? 0;
 
               return Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 5,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
+                    AspectRatio(
+                      aspectRatio: 1.0,
                       child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                         child: Image.network(
                           product.prodImage?.medium ?? '',
                           fit: BoxFit.cover,
-                          errorBuilder: (context, _, __) => const Icon(Icons.image_not_supported),
+                          errorBuilder: (_, __, ___) =>
+                          const Center(child: Icon(Icons.image_not_supported)),
                         ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(product.prodName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            product.prodName ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
                           const SizedBox(height: 4),
-                          Text("₹ ${product.prodRkPrice ?? 'N/A'}"),
-                          const SizedBox(height: 8),
+                          Text('₹ ${product.prodRkPrice ?? "N/A"}'),
+                          const SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                onPressed: () => ref.read(cartProvider.notifier).remove(product),
                                 icon: const Icon(Icons.remove_circle_outline),
+                                onPressed: () => cartNotifier.remove(product),
                               ),
                               Text('$quantity'),
                               IconButton(
-                                onPressed: () => ref.read(cartProvider.notifier).add(product),
                                 icon: const Icon(Icons.add_circle_outline),
+                                onPressed: () => cartNotifier.add(product),
                               ),
                             ],
                           ),
@@ -91,11 +113,27 @@ class ProductScreen extends ConsumerWidget {
                 ),
               );
             },
-          ),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+          );
+        },
       ),
+    );
+  }
+
+}
+
+class _QuantityButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _QuantityButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      icon: Icon(icon, size: 22, color: Colors.blueAccent),
+      onPressed: onPressed,
     );
   }
 }

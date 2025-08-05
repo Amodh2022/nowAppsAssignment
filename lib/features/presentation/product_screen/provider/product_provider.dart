@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/data/model/product_model/product_model.dart';
 import 'package:myapp/data/repositories/product_repo_impl.dart';
 
+import '../../../../shared/sqflite/sql_helper.dart';
+
 
 class PaginatedProductNotifier extends StateNotifier<AsyncValue<List<Products>>> {
   PaginatedProductNotifier(this.ref) : super(const AsyncValue.loading());
@@ -55,3 +57,6 @@ class PaginatedProductNotifier extends StateNotifier<AsyncValue<List<Products>>>
 final paginatedProductProvider = StateNotifierProvider<PaginatedProductNotifier, AsyncValue<List<Products>>>(
   (ref) => PaginatedProductNotifier(ref)..fetchInitialProducts(),
 );
+final localProductProvider = FutureProvider<List<Products>>((ref) async {
+  return await SqlHelper.getProducts();
+});
